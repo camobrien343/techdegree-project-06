@@ -1,7 +1,7 @@
 
-###FullStack Tech Degree Project 6
+### FullStack Tech Degree Project 6
 
-##Content Scraper:roller_coaster:
+## Content Scraper:roller_coaster:
 
 ### Getting Started
 
