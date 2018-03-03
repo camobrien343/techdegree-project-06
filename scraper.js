@@ -17,8 +17,10 @@ const   request = require('request'),
 const   siteLinks = [],     // Array to store site links
         shirtDataTotal = [];  // Array to store all shirt objects
 
+const url = 'http://shirts4mike.com';
+
 // request to the url
-request('http://shirts4mike.com', function (error, response, body) {
+request(url, function (error, response, body) {
   if (!error && response.statusCode == 200) {
     let $ = cheerio.load(body);
 
@@ -105,7 +107,7 @@ function createCSV(data) {
 function errorHandler(error) {
   let date = new Date();
   let log = "[" + date + "] " + error.message + "\n";
-  console.log('Whoops! We got an error.');
+  console.log('Whoops! There’s been a 404 error. Cannot connect to ' + url);
   fs.appendFile('scraper-error.log', log, function(error) {
     if (error) throw error;
     console.log('Error has been added to log');
