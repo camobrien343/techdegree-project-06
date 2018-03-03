@@ -1,3 +1,8 @@
+/* Treehouse Techdegree - Full Stack Javascript
+Cameron O'Brien
+Project 06
+Content Scraper
+*/
 
 "use strict";
 
@@ -12,16 +17,16 @@ const   request = require('request'),
 const   siteLinks = [],     // Array to store site links
         shirtDataTotal = [];  // Array to store all shirt objects
 
-
+// request to the url
 request('http://shirts4mike.com', function (error, response, body) {
   if (!error && response.statusCode == 200) {
     let $ = cheerio.load(body);
 
     $('a[href*="shirt"]').each(function() {
       let href = $(this).attr('href');
-      let path = `http://shirts4mike.com/${href}`;
-      if (siteLinks.indexOf(path) == -1) {
-        siteLinks.push(path);
+      let urlPath = `http://shirts4mike.com/${href}`;
+      if (siteLinks.indexOf(urlPath) == -1) {
+        siteLinks.push(urlPath);
         console.log("siteLinks: " , siteLinks);
       }
     });
@@ -29,6 +34,7 @@ request('http://shirts4mike.com', function (error, response, body) {
     for (let i = 0; i < siteLinks.length; i++) {
       if (siteLinks[i].indexOf('?id=') > 0 ) {
         shirtData.push(siteLinks[i]);
+
       } else {
         request(siteLinks[i], function(error, response, body) {
           if (!error && response.statusCode == 200) {
@@ -49,18 +55,19 @@ request('http://shirts4mike.com', function (error, response, body) {
                   let title = $('title').text();
                   let price = $('.price').text();
                   let img = $('.shirt-picture img').attr('src');
-
+                  // shirt object to store data
                   let shirts = {};
                   shirts.Title = title;
                   shirts.Price = price;
                   shirts["Image URL"] = `http://shirts4mike.com/${img}`;
-                  shirts.URL = response.request.uri.href;
                   shirts.Time = moment().format("MMMM Do YYYY, h:mm:ss a");
+                  shirts.URL = response.request.uri.href;
+                  
                   shirtDataTotal.push(shirts);
                   console.log("shirtData: ", shirtData);
                   console.log("shirtDataTotal: ", shirtDataTotal);
-
                   createCSV(shirtDataTotal);
+
                 } else {
                   errorHandler(error);
                 }
@@ -76,7 +83,6 @@ request('http://shirts4mike.com', function (error, response, body) {
     errorHandler(error);
   }
 });
-
 
 // Create csv file and store it in '/data' directory
 function createCSV(data) {
@@ -95,7 +101,7 @@ function createCSV(data) {
     });
 }
      
-
+// Function to handle and display errors
 function errorHandler(error) {
   let date = new Date();
   let log = "[" + date + "] " + error.message + "\n";

@@ -12,9 +12,6 @@
     "moment": "^2.20.1",
     "request": "^2.83.0"
   },
-  "devDependencies": {
-    "eslint": "^4.18.1"
-  },
   "scripts": {
     "start": "node scraper.js",
     "test": "echo \"Error: no test specified\" && exit 1"
