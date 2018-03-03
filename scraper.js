@@ -1,15 +1,107 @@
-let unsecurePlainTextPassword = "password";
+
+"use strict";
+
+// Dependencies
+const   request = require('request'),
+        cheerio = require('cheerio'),
+        json2csv = require('json2csv'),
+        moment = require("moment"),
+        fs = require("fs");
+
+// Declare variables to store data
+const   siteLinks = [],     // Array to store site links
+        shirtDataTotal = [];  // Array to store all shirt objects
 
 
-var colors = require('colors');
-var bcrypt = require('bcrypt');
-const saltRounds = 10;
-const myPlaintextPassword = 's0/\/\P4$$w0rD';
-const someOtherPlaintextPassword = unsecurePlainTextPassword;
+request('http://shirts4mike.com', function (error, response, body) {
+  if (!error && response.statusCode == 200) {
+    let $ = cheerio.load(body);
 
-bcrypt.genSalt(saltRounds, function(err, salt) {
-    bcrypt.hash(myPlaintextPassword, salt, function(err, hash) {
-        // Store hash in your password DB.
-        console.log(hash.green);
+    $('a[href*="shirt"]').each(function() {
+      let href = $(this).attr('href');
+      let path = `http://shirts4mike.com/${href}`;
+      if (siteLinks.indexOf(path) == -1) {
+        siteLinks.push(path);
+        console.log("siteLinks: " , siteLinks);
+      }
     });
+    const shirtData = [];
+    for (let i = 0; i < siteLinks.length; i++) {
+      if (siteLinks[i].indexOf('?id=') > 0 ) {
+        shirtData.push(siteLinks[i]);
+      } else {
+        request(siteLinks[i], function(error, response, body) {
+          if (!error && response.statusCode == 200) {
+            let $ = cheerio.load(body);
+            $("a[href^='shirt.php?id=']").each(function() {
+              let href = $(this).attr('href');
+              let path = `http://shirts4mike.com/${href}`;
+              if (shirtData.indexOf(path) == -1) {
+                shirtData.push(path);
+                console.log("shirtData: " , shirtData);
+              }
+            });
+            
+            for (let k = 0; k < shirtData.length; k++) {
+              request(shirtData[k], function (error, response, body) {
+                if (!error && response.statusCode == 200) {
+                  let $ = cheerio.load(body);
+                  let title = $('title').text();
+                  let price = $('.price').text();
+                  let img = $('.shirt-picture img').attr('src');
+
+                  let shirts = {};
+                  shirts.Title = title;
+                  shirts.Price = price;
+                  shirts["Image URL"] = `http://shirts4mike.com/${img}`;
+                  shirts.URL = response.request.uri.href;
+                  shirts.Time = moment().format("MMMM Do YYYY, h:mm:ss a");
+                  shirtDataTotal.push(shirts);
+                  console.log("shirtData: ", shirtData);
+                  console.log("shirtDataTotal: ", shirtDataTotal);
+
+                  createCSV(shirtDataTotal);
+                } else {
+                  errorHandler(error);
+                }
+              });
+            }
+          } else {
+            errorHandler(error);
+          }
+        });
+      }
+    }
+  } else {
+    errorHandler(error);
+  }
 });
+
+
+// Create csv file and store it in '/data' directory
+function createCSV(data) {
+    const time = moment().format("YYYY[-]MM[-]DD");
+    const dir = "./data";
+    if(!fs.existsSync(dir)) {
+      fs.mkdirSync(dir);
+    }
+    // Headers for csv file
+    const csvTitle = ['Title', 'Price', 'Image URL', 'URL', 'Time'];
+    json2csv({ data: shirtDataTotal, fields: csvTitle }, function(error, csv) {
+      fs.writeFile( dir + "/" + time + ".csv", csv, function(error) {
+        if (error) throw error;
+          console.log('File write and save complete');
+      });
+    });
+}
+     
+
+function errorHandler(error) {
+  let date = new Date();
+  let log = "[" + date + "] " + error.message + "\n";
+  console.log('Whoops! We got an error.');
+  fs.appendFile('scraper-error.log', log, function(error) {
+    if (error) throw error;
+    console.log('Error has been added to log');
+  });
+};
